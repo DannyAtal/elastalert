@@ -9,7 +9,7 @@ ENV ELASTALERT_HOME /opt/elastalert
 
 WORKDIR /opt
 
-RUN apk add --update --no-cache ca-certificates openssl-dev openssl python3-dev python3 py2-pip py3-yaml libffi-dev gcc musl-dev wget && \
+RUN apk add --update --no-cache ca-certificates openssl-dev openssl python3-dev python3 py3-pip py3-yaml libffi-dev gcc musl-dev wget && \
 # Download and unpack Elastalert.
     wget -O elastalert.zip "${ELASTALERT_URL}" && \
     unzip elastalert.zip && \
@@ -20,18 +20,23 @@ WORKDIR "${ELASTALERT_HOME}"
 
 # Install Elastalert.
 # see: https://github.com/Yelp/elastalert/issues/1654
-RUN sed -i 's/jira>=1.0.10/jira>=1.0.10,<1.0.15/g' setup.py && \
-    python setup.py install && \
-    pip install -r requirements.txt
+RUN pip install texttable tencentcloud-sdk-python stomp.py statsd-tags --break-system-packages
+RUN pip install sortedcontainers twilio --break-system-packages
+RUN apk upgrade --no-cache py3-setuptools
+RUN curl https://bootstrap.pypa.io/get-pip.py | python
+RUN pip install prettytable envparse tzlocal --break-system-packages
+RUN pip3 install -r requirements.txt --break-system-packages
+RUN python3 setup.py install
+
 
 FROM node:alpine
 LABEL maintainer="Dani Atalla <Dani.atalla@cnvrg.io>"
 # Set timezone for this container
 ENV TZ Etc/UTC
 
-RUN apk add --update --no-cache curl tzdata python2 make libmagic
+RUN apk add --update --no-cache curl tzdata python3 make libmagic
 
-COPY --from=py-ea /usr/lib/python3.1/site-packages /usr/lib/python3.1/site-packages
+COPY --from=py-ea /usr/lib/python3.11/site-packages /usr/lib/python3.11/site-packages
 COPY --from=py-ea /opt/elastalert /opt/elastalert
 COPY --from=py-ea /usr/bin/elastalert* /usr/bin/
 
